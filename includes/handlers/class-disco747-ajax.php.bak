@@ -307,66 +307,75 @@ class Disco747_Ajax {
             // Path PDF se richiesto
             $pdf_path = null;
             if ($attach_pdf) {
-                $this->log('[Email] PDF richiesto - genero PDF aggiornato...');
+                $this->log('[Email] PDF richiesto - verifico esistenza...');
                 
-                // ✅ FIX: Genera sempre un nuovo PDF per garantire che sia aggiornato con i dati correnti del database
-                // Questo evita problemi di mismatch tra nome file nel DB e file reale su disco
+                // Controlla se esiste giÃƒÆ’Ã‚Â  un PDF nel database
+                if (!empty($preventivo['pdf_url'])) {
+                    $pdf_path = $preventivo['pdf_url'];
+                    $this->log('[Email] PDF path dal DB: ' . $pdf_path);
+                }
                 
-                // Prepara dati completi per PDF
-                $pdf_data = array(
-                    'nome_referente' => $preventivo['nome_referente'] ?? '',
-                    'cognome_referente' => $preventivo['cognome_referente'] ?? '',
-                    'nome_cliente' => $preventivo['nome_cliente'] ?? '',
-                    'email' => $preventivo['email'] ?? '',
-                    'mail' => $preventivo['email'] ?? '',
-                    'telefono' => $preventivo['telefono'] ?? '',
-                    'cellulare' => $preventivo['telefono'] ?? '',
-                    'data_evento' => $preventivo['data_evento'] ?? '',
-                    'tipo_evento' => $preventivo['tipo_evento'] ?? '',
-                    'tipo_menu' => $preventivo['tipo_menu'] ?? 'Menu 7',
-                    'numero_invitati' => $preventivo['numero_invitati'] ?? 0,
-                    'orario_inizio' => $preventivo['orario_inizio'] ?? '20:30',
-                    'orario_fine' => $preventivo['orario_fine'] ?? '01:30',
-                    'omaggio1' => $preventivo['omaggio1'] ?? '',
-                    'omaggio2' => $preventivo['omaggio2'] ?? '',
-                    'omaggio3' => $preventivo['omaggio3'] ?? '',
-                    'extra1' => $preventivo['extra1'] ?? '',
-                    'extra1_importo' => $preventivo['extra1_importo'] ?? 0,
-                    'extra2' => $preventivo['extra2'] ?? '',
-                    'extra2_importo' => $preventivo['extra2_importo'] ?? 0,
-                    'extra3' => $preventivo['extra3'] ?? '',
-                    'extra3_importo' => $preventivo['extra3_importo'] ?? 0,
-                    'importo_totale' => $preventivo['importo_totale'] ?? 0,
-                    'importo_preventivo' => $preventivo['importo_preventivo'] ?? $preventivo['importo_totale'] ?? 0,
-                    'acconto' => $preventivo['acconto'] ?? 0,
-                    'note_aggiuntive' => $preventivo['note_aggiuntive'] ?? '',
-                    'note_interne' => $preventivo['note_interne'] ?? '',
-                    'preventivo_id' => $preventivo['preventivo_id'] ?? '',
-                    'stato' => $preventivo['stato'] ?? 'attivo'
-                );
-                
-                $pdf_generator = $disco747_crm->get_pdf();
-                if ($pdf_generator) {
-                    $pdf_path = $pdf_generator->generate_pdf($pdf_data);
+                // Verifica se il file esiste fisicamente
+                if (!$pdf_path || !file_exists($pdf_path)) {
+                    $this->log('[Email] PDF non trovato su disco, genero nuovo PDF...');
                     
-                    if ($pdf_path && file_exists($pdf_path)) {
-                        $this->log('[Email] ✅ PDF generato con successo: ' . basename($pdf_path));
-                        $this->log('[Email] Dimensione PDF: ' . filesize($pdf_path) . ' bytes');
+                    // Prepara dati completi per PDF
+                    $pdf_data = array(
+                        'nome_referente' => $preventivo['nome_referente'] ?? '',
+                        'cognome_referente' => $preventivo['cognome_referente'] ?? '',
+                        'nome_cliente' => $preventivo['nome_cliente'] ?? '',
+                        'email' => $preventivo['email'] ?? '',
+                        'mail' => $preventivo['email'] ?? '',
+                        'telefono' => $preventivo['telefono'] ?? '',
+                        'cellulare' => $preventivo['telefono'] ?? '',
+                        'data_evento' => $preventivo['data_evento'] ?? '',
+                        'tipo_evento' => $preventivo['tipo_evento'] ?? '',
+                        'tipo_menu' => $preventivo['tipo_menu'] ?? 'Menu 7',
+                        'numero_invitati' => $preventivo['numero_invitati'] ?? 0,
+                        'orario_inizio' => $preventivo['orario_inizio'] ?? '20:30',
+                        'orario_fine' => $preventivo['orario_fine'] ?? '01:30',
+                        'omaggio1' => $preventivo['omaggio1'] ?? '',
+                        'omaggio2' => $preventivo['omaggio2'] ?? '',
+                        'omaggio3' => $preventivo['omaggio3'] ?? '',
+                        'extra1' => $preventivo['extra1'] ?? '',
+                        'extra1_importo' => $preventivo['extra1_importo'] ?? 0,
+                        'extra2' => $preventivo['extra2'] ?? '',
+                        'extra2_importo' => $preventivo['extra2_importo'] ?? 0,
+                        'extra3' => $preventivo['extra3'] ?? '',
+                        'extra3_importo' => $preventivo['extra3_importo'] ?? 0,
+                        'importo_totale' => $preventivo['importo_totale'] ?? 0,
+                        'importo_preventivo' => $preventivo['importo_preventivo'] ?? $preventivo['importo_totale'] ?? 0,
+                        'acconto' => $preventivo['acconto'] ?? 0,
+                        'note_aggiuntive' => $preventivo['note_aggiuntive'] ?? '',
+                        'note_interne' => $preventivo['note_interne'] ?? '',
+                        'preventivo_id' => $preventivo['preventivo_id'] ?? '',
+                        'stato' => $preventivo['stato'] ?? 'attivo'
+                    );
+                    
+                    $pdf_generator = $disco747_crm->get_pdf();
+                    if ($pdf_generator) {
+                        $pdf_path = $pdf_generator->generate_pdf($pdf_data);
                         
-                        // Aggiorna database con path PDF
-                        $wpdb->update(
-                            $table_name,
-                            array('pdf_url' => $pdf_path),
-                            array('id' => $preventivo_id),
-                            array('%s'),
-                            array('%d')
-                        );
+                        if ($pdf_path && file_exists($pdf_path)) {
+                            $this->log('[Email] ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PDF generato con successo: ' . basename($pdf_path));
+                            
+                            // Aggiorna database con path PDF
+                            $wpdb->update(
+                                $table_name,
+                                array('pdf_url' => $pdf_path),
+                                array('id' => $preventivo_id),
+                                array('%s'),
+                                array('%d')
+                            );
+                        } else {
+                            $this->log('[Email] ÃƒÂ¢Ã‚ÂÃ…â€™ ERRORE: PDF non generato o file non trovato', 'ERROR');
+                            $pdf_path = null;
+                        }
                     } else {
-                        $this->log('[Email] ❌ ERRORE: PDF non generato o file non trovato', 'ERROR');
-                        $pdf_path = null;
+                        $this->log('[Email] ÃƒÂ¢Ã‚ÂÃ…â€™ PDF Generator non disponibile', 'ERROR');
                     }
                 } else {
-                    $this->log('[Email] ❌ PDF Generator non disponibile', 'ERROR');
+                    $this->log('[Email] ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PDF esistente trovato: ' . basename($pdf_path));
                 }
             }
             
