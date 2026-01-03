@@ -387,7 +387,7 @@ class Disco747_PDF {
             'Menu 7-4-7' => 'menu-7-4-7-template.html'
         );
         
-        return $mapping[$menu_type] ??  'menu-7-template. html';
+        return $mapping[$menu_type] ?? 'menu-7-template.html';
     }
 
     /**
